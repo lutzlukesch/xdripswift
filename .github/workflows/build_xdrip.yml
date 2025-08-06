@@ -233,6 +233,12 @@ jobs:
       - name: Sync clock
         run: sudo sntp -sS time.windows.com
       
+      # Install Apple WWDR Certificate (required for code signing)
+      - name: Install WWDR Certificate
+        run: |
+          curl -O https://developer.apple.com/certificationauthority/AppleWWDRCAG3.cer
+          sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain AppleWWDRCAG3.cer
+      
       # Build signed Xdrip4iOS IPA file
       - name: Fastlane Build & Archive
         run: bundle exec fastlane build_xdrip4ios
