@@ -42,6 +42,9 @@ enum ConstantsLog {
     /// Libre2
     static let categoryCGMLibre2 =                          "Libre2                        "
     
+    /// Libre3
+    static let categoryCGMLibre3 =                          "Libre3                        "
+    
     /// core data manager
     static let categoryCoreDataManager =                    "CoreDataManager               "
     
