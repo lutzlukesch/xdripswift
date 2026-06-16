@@ -2,7 +2,7 @@
 
 **Project Goal**: Add FreeStyle Libre 3 sensor support to xDrip4iOS based on Juggluco Android implementation.
 
-**Status**: Planning Phase  
+**Status**: In Progress - Phase 1  
 **Target Completion**: TBD  
 **Priority**: High
 
@@ -11,19 +11,23 @@
 ## Phase 1: Foundation & Setup
 
 ### Task 1.1: Project Structure Setup
-- [ ] Create directory structure: `xDrip/BluetoothTransmitter/CGM/Libre/Libre3/`
+- [x] Create directory structure: `xDrip/BluetoothTransmitter/CGM/Libre/Libre3/`
 - [ ] Add new sensor type enum case: `.libre3` to `LibreSensorType`
-- [ ] Update `ConstantsLibre.swift` with Libre 3 constants
+- [x] Update `ConstantsLibre.swift` with Libre 3 constants
 - [ ] Add Info.plist entries for NFC and Bluetooth permissions
 
 **Estimated Time**: 2 hours  
 **Dependencies**: None  
 **Reference**: Juggluco `sensoren.hpp` line 134-146
 
+**Commits**:
+- `aed07d1` - feat(libre3): Add Libre 3 constants
+- `ac6b1bd` - feat(libre3): Add Libre 3 logging category
+
 ---
 
 ### Task 1.2: Data Models
-- [ ] Create `Libre3Models.swift` with data structures:
+- [x] Create `Libre3Models.swift` with data structures:
   - `Libre3SensorData` (UID, serial, device address, start time)
   - `Libre3GlucoseReading` (timestamp, value, trend, record number)
   - `Libre3HistoricEntry` (timestamp, value, factory timestamp)
@@ -34,6 +38,9 @@
 **Estimated Time**: 4 hours  
 **Dependencies**: None  
 **Reference**: Juggluco data structures in `SensorGlucoseData.hpp`
+
+**Commits**:
+- `30d27e1` - feat(libre3): Add Libre 3 data models
 
 ---
 
@@ -78,11 +85,11 @@
 ## Phase 3: Cryptographic Foundation
 
 ### Task 3.1: Crypto Context Setup
-- [ ] Create `Libre3CryptoContext.swift`
-- [ ] Implement ECDH key exchange using CryptoKit's P256
-- [ ] Generate and store private key securely (Keychain)
-- [ ] Export public key for sensor handshake
-- [ ] Implement kAuth storage and retrieval
+- [x] Create `Libre3CryptoContext.swift`
+- [x] Implement ECDH key exchange using CryptoKit's P256
+- [x] Generate and store private key securely (Keychain)
+- [x] Export public key for sensor handshake
+- [x] Implement kAuth storage and retrieval
 
 **Estimated Time**: 10 hours  
 **Dependencies**: Task 1.2  
@@ -93,14 +100,17 @@
 - Verify key storage in Keychain
 - Test key retrieval for returning users
 
+**Commits**:
+- `890380f` - feat(libre3): Add cryptography helper
+
 ---
 
 ### Task 3.2: Challenge-Response Authentication
-- [ ] Implement challenge processing (`processChallenge`)
-- [ ] Receive r1 (16 bytes) + nonce1 (7 bytes) from sensor
-- [ ] Generate r2 (16 bytes) random value
-- [ ] Combine r1, r2, and sensor PIN (4 bytes)
-- [ ] Encrypt challenge response
+- [x] Implement challenge processing (`processChallenge`)
+- [x] Receive r1 (16 bytes) + nonce1 (7 bytes) from sensor
+- [x] Generate r2 (16 bytes) random value
+- [x] Combine r1, r2, and sensor PIN (4 bytes)
+- [x] Encrypt challenge response
 - [ ] Validate sensor's response (r1, r2 verification)
 
 **Estimated Time**: 12 hours  
@@ -116,14 +126,17 @@
 - Verify encryption/decryption roundtrip
 - Test with actual sensor challenge
 
+**Commits**:
+- `890380f` - feat(libre3): Add cryptography helper (includes challenge-response)
+
 ---
 
 ### Task 3.3: AES-GCM Encryption/Decryption
-- [ ] Initialize AES-GCM context with kEnc and ivEnc
-- [ ] Implement `encrypt(data:type:)` method
-- [ ] Implement `decrypt(data:type:)` method
+- [x] Initialize AES-GCM context with kEnc and ivEnc
+- [x] Implement `encrypt(data:type:)` method
+- [x] Implement `decrypt(data:type:)` method
 - [ ] Handle different data types (glucose=3, historic=4, status=2, etc.)
-- [ ] Add error handling for decryption failures
+- [x] Add error handling for decryption failures
 
 **Estimated Time**: 8 hours  
 **Dependencies**: Task 3.2  
@@ -133,6 +146,9 @@
 - Unit tests with known plaintext/ciphertext pairs
 - Test all data type codes
 - Verify padding and authentication tags
+
+**Commits**:
+- `890380f` - feat(libre3): Add cryptography helper (includes AES-GCM)
 
 ---
 
@@ -624,16 +640,20 @@
 
 ---
 
-## Next Steps
+## Progress Summary
 
-1. ✅ Read this task breakdown
-2. ⬜ Set up development environment
-3. ⬜ Review Juggluco source code thoroughly
-4. ⬜ Begin Phase 1: Foundation
-5. ⬜ Obtain test sensor and LibreView account
+**Completed Tasks**: 4 / ~50 tasks  
+**Current Phase**: Phase 1 - Foundation & Setup  
+**Next Task**: NFC Detection (Task 2.1)  
+
+**Recent Commits**:
+- `aed07d1` - Add Libre 3 constants
+- `ac6b1bd` - Add Libre 3 logging category
+- `30d27e1` - Add Libre 3 data models
+- `890380f` - Add cryptography helper
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: 2026-06-15  
+**Document Version**: 1.1  
+**Last Updated**: 2026-06-16  
 **Maintained By**: @lutzlukesch
