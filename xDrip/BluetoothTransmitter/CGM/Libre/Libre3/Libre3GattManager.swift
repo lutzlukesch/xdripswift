@@ -115,8 +115,8 @@ class Libre3GattManager {
             }
         }
         
-        if allCharacteristicsDiscovered, let connectedPeripheral = peripheral {
-            startNotificationCascade(peripheral: connectedPeripheral)
+        if allCharacteristicsDiscovered, let availablePeripheral = peripheral {
+            startNotificationCascade(peripheral: availablePeripheral)
         }
     }
     
@@ -128,8 +128,8 @@ class Libre3GattManager {
                    error!.localizedDescription)
             return
         }
-        guard let connectedPeripheral = peripheral else { return }
-        handleNotificationStateUpdate(for: characteristic, peripheral: connectedPeripheral)
+        guard let availablePeripheral = peripheral else { return }
+        handleNotificationStateUpdate(for: characteristic, peripheral: availablePeripheral)
     }
     
     /// Called when a characteristic's value is updated (notification or read)
