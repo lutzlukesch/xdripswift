@@ -268,7 +268,13 @@ enum CGMTransmitterType:String, CaseIterable {
             }
             
         case .Libre3:
-            return "Libre 3"
+            // Differentiate between Libre 3 (14 days) and Libre 3 Plus (15 days)
+            // Based on Juggluco wearduration: standard=14*2 halfdays, plus=15*2 halfdays
+            if let activeSensorMaxSensorAgeInDays = UserDefaults.standard.activeSensorMaxSensorAgeInDays, activeSensorMaxSensorAgeInDays >= 15 {
+                return "Libre 3 Plus"
+            } else {
+                return "Libre 3"
+            }
             
         default:
             return self.rawValue
