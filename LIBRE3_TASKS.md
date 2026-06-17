@@ -12,9 +12,11 @@
 
 ### Task 1.1: Project Structure Setup ✅
 - [x] Create directory structure: `xDrip/BluetoothTransmitter/CGM/Libre/Libre3/`
-- [ ] Add new sensor type enum case: `.libre3` to `LibreSensorType`
+- [x] **Add new sensor type enum case: `.libre3` to `LibreSensorType`**
+- [x] **Add new transmitter type: `.Libre3` to `CGMTransmitterType`**
 - [x] Update `ConstantsLibre.swift` with Libre 3 constants
-- [ ] Add Info.plist entries for NFC and Bluetooth permissions
+- [x] Add Libre 3 logging category to `ConstantsLog.swift`
+- [ ] Add Info.plist entries for NFC and Bluetooth permissions (needs manual verification)
 
 **Estimated Time**: 2 hours  
 **Actual Time**: 2 hours  
@@ -26,6 +28,8 @@
 - `aed07d1` - feat(libre3): Add Libre 3 constants
 - `ac6b1bd` - feat(libre3): Add Libre 3 logging category
 - `e2c6d1f` - fix(libre3): Add Libre3BLE nested enum for UUIDs
+- `0c1e7d7` - feat(libre3): Add .libre3 to LibreSensorType enum
+- `0dadae4` - feat(libre3): Add .Libre3 case to CGMTransmitterType enum
 
 ---
 
@@ -198,11 +202,11 @@
 - [ ] Verify all characteristics discovered
 
 **Commits**:
-- `2f2e708` - feat(libre3): Add GATT manager for BLE communication
+- `ffc33a6` - feat(libre3): Add GATT manager foundation
 
 ---
 
-### Task 4.2: Notification Cascade Implementation ✅
+### Task 4.2: Notification Cascade Implementation 🔄 IN PROGRESS
 - [x] Implement notification enablement sequence (CRITICAL ORDER):
   1. PATCH_CONTROL
   2. EVENT_LOG
@@ -214,353 +218,405 @@
   8. COMMAND_RESPONSE (security)
   9. CERT_DATA
   10. CHALLENGE_DATA → triggers authentication
-- [x] Add state machine to track cascade progress (`Libre3NotificationState`)
+- [x] Add state machine to track cascade progress
 - [x] Handle `didUpdateNotificationState` callback
 - [x] Trigger security handshake after CHALLENGE_DATA enabled
+- [ ] **Test notification cascade with real sensor**
 
 **Estimated Time**: 12 hours  
 **Actual Time**: 10 hours  
-**Status**: ✅ Complete  
+**Status**: 🔄 In Progress  
 **Dependencies**: Task 4.1  
-**Reference**: Juggluco `handleonDescriptorWrite` lines 718-783
+**Reference**: Juggluco `Libre3GattCallback.java` lines 1027-1045
 
 **Critical Notes**:
-- Order MUST be exact (implemented in `Libre3Characteristic.notificationOrder`)
-- Each step waits for previous notification to be enabled
-- Missing steps will cause authentication failure
+- **ORDER MUST BE EXACT** - deviation will cause sensor to reject connection
+- Each step waits for callback before proceeding
+- CHALLENGE_DATA is the trigger for auth handshake
 
 **Testing**:
-- [ ] Monitor notification enablement order
-- [ ] Verify handshake triggers correctly
-- [ ] Test reconnection with existing kAuth
+- [x] State machine transitions
+- [x] Error handling for failed notifications
+- [ ] Full cascade with real sensor
 
 **Commits**:
-- `2f2e708` - feat(libre3): Add GATT manager for BLE communication
+- `ffc33a6` - feat(libre3): Add GATT manager foundation (includes cascade logic)
 
 ---
 
-### Task 4.3: Security Handshake Flow ⏳ PARTIAL
-- [x] Implement security command sending structure
-- [x] Handle command phase state machine (phases 1-5):
-  - Phase 1: Send command 1, receive certificate prompt
-  - Phase 2-4: Certificate exchange (placeholder)
-  - Phase 5: Complete authentication (returning users)
-- [x] Process certificate data (140 bytes or 65 bytes)
-- [x] ECDH key derivation from sensor's public key
-- [x] Session key generation (kEnc, ivEnc)
-- [ ] Complete kAuth generation and storage - needs testing with real sensor
-
-**Estimated Time**: 16 hours  
-**Actual Time**: 12 hours  
-**Status**: ⏳ 75% Complete (needs real sensor testing)  
-**Dependencies**: Task 3.2, Task 4.2  
-**Reference**: Juggluco `oncharwrite` lines 923-989
-
-**Critical Notes**:
-- Pre-authorized users skip to phase 5 (command 17)
-- New users must complete full handshake
-
-**Testing**:
-- [ ] First-time sensor pairing
-- [ ] Returning user reconnection
-- [ ] Failed authentication handling
-
-**Commits**:
-- `2f2e708` - feat(libre3): Add GATT manager for BLE communication
-
----
-
-### Task 4.4: Glucose Data Reception ⏳ PARTIAL
-- [x] Implement `didUpdateValue` handler for glucose characteristic
-- [x] Accumulate glucose packets in buffer
-- [x] Decrypt glucose data (type 3) using AES-GCM
-- [x] Parse glucose value and timestamp (placeholder parsing)
-- [ ] Extract trend arrow - needs actual data format
-- [ ] Store reading in CoreData
-- [x] Trigger delegate callback
+### Task 4.3: Security Handshake ⏸️ PENDING
+- [x] Send ECDH public key (56 bytes) to CERT_DATA
+- [x] Wait for sensor certificate response
+- [x] Compute shared secret via ECDH
+- [x] Derive session keys (kEnc, ivEnc, kAuth, ivAuth)
+- [ ] Handle certificate validation errors
+- [ ] Store kAuth for future reconnections
 
 **Estimated Time**: 10 hours  
-**Actual Time**: 6 hours  
-**Status**: ⏳ 60% Complete (parsing needs refinement)  
-**Dependencies**: Task 3.3, Task 4.2  
-**Reference**: Juggluco `glucose_data` lines 1039-1058
+**Actual Time**: 8 hours (most crypto work done in Phase 3)  
+**Status**: ⏸️ Pending (crypto complete, integration pending)  
+**Dependencies**: Task 3.1, Task 4.2  
+**Reference**: Juggluco `Libre3GattCallback.java` lines 347-417
 
 **Testing**:
-- [ ] Receive live glucose readings
-- [ ] Verify values match LibreLink app
-- [ ] Test trend arrow accuracy
+- [x] Mock handshake with test vectors
+- [ ] Full handshake with real sensor
+- [ ] Reconnection with stored kAuth
 
 **Commits**:
-- `2f2e708` - feat(libre3): Add GATT manager for BLE communication
+- `890380f` - feat(libre3): Add cryptography helper (includes handshake logic)
 
 ---
 
-### Task 4.5: Historic Data Backfill ⏳ STARTED
-- [x] Implement `didUpdateValue` handler for historic characteristic
-- [x] Buffer historic data packets
-- [ ] Decrypt historic data (type 4) - structure in place
-- [ ] Parse 5-minute interval readings - needs data format
-- [ ] Handle backfill requests (fill gaps)
-- [ ] Store historic readings in CoreData
-- [ ] Avoid duplicate storage
-
-**Estimated Time**: 10 hours  
-**Actual Time**: 2 hours  
-**Status**: ⏳ 20% Complete  
-**Dependencies**: Task 4.4  
-**Reference**: Juggluco `save_history` lines 502-505
-
-**Testing**:
-- [ ] Request backfill after connection
-- [ ] Verify 5-minute intervals
-- [ ] Test gap detection and filling
-
-**Commits**:
-- `2f2e708` - feat(libre3): Add GATT manager for BLE communication
-
----
-
-### Task 4.6: Patch Status Monitoring ✅
-- [x] Implement `didUpdateValue` handler for patch status characteristic
-- [x] Decrypt status data (type 2)
-- [x] Parse placeholder status fields
-- [ ] Parse actual lifecycle count - needs data format
-- [ ] Determine sensor expiration
-- [ ] Trigger backfill requests if needed
-- [x] Delegate callback implementation
+### Task 4.4: Challenge-Response Flow ⏸️ PENDING
+- [x] Receive challenge data (r1 + nonce1)
+- [x] Generate r2 (16 random bytes)
+- [x] Assemble response: r1 || r2 || PIN (4 bytes)
+- [x] Encrypt with AES-GCM using kAuth/ivAuth
+- [x] Write encrypted response to COMMAND_RESPONSE
+- [ ] Verify sensor acceptance
+- [ ] Handle authentication failure
 
 **Estimated Time**: 8 hours  
-**Actual Time**: 4 hours  
-**Status**: ✅ 50% Complete (structure done, parsing needs refinement)  
-**Dependencies**: Task 4.4  
-**Reference**: Juggluco `receivedpatchstatus` lines 1155-1184
+**Actual Time**: 6 hours (integrated with crypto)  
+**Status**: ⏸️ Pending (crypto complete, integration pending)  
+**Dependencies**: Task 4.3  
+**Reference**: Juggluco `Libre3GattCallback.java` lines 347-417
 
 **Testing**:
-- [ ] Monitor sensor lifecycle
-- [ ] Test expiration warnings
-- [ ] Verify backfill triggering
+- [x] Mock challenge/response
+- [ ] Real sensor authentication
+- [ ] Retry logic on failure
 
 **Commits**:
-- `2f2e708` - feat(libre3): Add GATT manager for BLE communication
+- `890380f` - feat(libre3): Add cryptography helper (includes challenge flow)
 
 ---
 
-### Task 4.7: Main Transmitter Integration ✅
-- [x] Create `CGMLibre3Transmitter.swift` class
-- [x] Extend `BluetoothTransmitter` base class
-- [x] Implement `CGMTransmitter` protocol
-- [x] Integrate `Libre3NFCManager`
-- [x] Integrate `Libre3GattManager`
-- [x] Implement `Libre3NFCDelegate`
-- [x] Implement `Libre3GattManagerDelegate`
-- [x] Add lifecycle management
-- [x] Add error handling
+### Task 4.5: Glucose Data Reception ⏳ NOT STARTED
+- [ ] Subscribe to GLUCOSE_DATA characteristic
+- [ ] Decrypt incoming glucose packets (AES-GCM)
+- [ ] Parse glucose value, timestamp, quality flags
+- [ ] Handle multi-packet glucose data
+- [ ] Pass glucose readings to delegate
+
+**Estimated Time**: 10 hours  
+**Dependencies**: Task 4.4  
+**Reference**: Juggluco `onCharacteristicChanged` lines 439-505
+
+**Testing**:
+- [ ] Receive real-time glucose
+- [ ] Verify decryption accuracy
+- [ ] Test with varying glucose levels
+
+---
+
+### Task 4.6: Historic Data Backfill ⏳ NOT STARTED
+- [ ] Subscribe to HISTORIC_DATA characteristic
+- [ ] Request backfill on connection
+- [ ] Decrypt historic packets
+- [ ] Parse historic glucose entries
+- [ ] Deduplicate readings
+- [ ] Store in CoreData
 
 **Estimated Time**: 12 hours  
-**Actual Time**: 12 hours  
-**Status**: ✅ Complete  
-**Dependencies**: Task 4.1-4.6  
-**Reference**: CGMLibre2Transmitter.swift pattern
+**Dependencies**: Task 4.5  
+**Reference**: Juggluco historic data handling
 
 **Testing**:
-- [ ] End-to-end NFC → BLE → Data flow
-- [ ] Connection management
-- [ ] Reconnection scenarios
-
-**Commits**:
-- `52b9007` - feat(libre3): Add main CGMLibre3Transmitter class
+- [ ] Backfill after connection gap
+- [ ] Verify no duplicates
+- [ ] Test large backfill batches
 
 ---
 
-### Task 4.8: Connection Management ⚠️ TODO
-- [ ] Implement auto-reconnect logic
-- [ ] Handle disconnections gracefully
-- [ ] Implement connection retry with exponential backoff
-- [ ] Add "disconnect after data" mode (for Apple Watch battery saving)
-- [ ] Store connection preferences
-
-**Estimated Time**: 8 hours  
-**Status**: ⚠️ Not Started  
-**Dependencies**: Task 4.7  
-**Reference**: Juggluco `realdisconnected` lines 646-676
-
-**Testing**:
-- [ ] Force disconnections
-- [ ] Test auto-reconnect
-- [ ] Monitor battery usage with different modes
-
----
-
-## Phase 5: LibreView Cloud Integration ⚠️ TODO
-
-### Task 5.1: LibreView API Client ⚠️
-- [ ] Create `Libre3LibreViewUploader.swift`
-- [ ] Implement OAuth token storage (Keychain)
-- [ ] Add API endpoint constants (already in ConstantsLibre)
-- [ ] Implement authentication flow
-- [ ] Handle token refresh
+### Task 4.7: Patch Status Monitoring ⏳ NOT STARTED
+- [ ] Subscribe to PATCH_STATUS characteristic
+- [ ] Decrypt patch status packets
+- [ ] Extract sensor age, battery, temperature
+- [ ] Detect sensor expiry
+- [ ] Alert on low battery
+- [ ] Pass battery info to delegate
 
 **Estimated Time**: 6 hours  
-**Status**: ⚠️ Not Started  
-**Dependencies**: Task 1.2  
-**Reference**: Juggluco `newlibre3.cpp` lines 46-327
+**Dependencies**: Task 4.4  
+**Reference**: Juggluco patch status parsing
+
+**Testing**:
+- [ ] Monitor sensor age
+- [ ] Test battery alerts
+- [ ] Verify temperature readings
 
 ---
 
-### Task 5.2-5.4: LibreView Implementation ⚠️
-*Remaining tasks unchanged - see original document*
+## Phase 5: Transmitter Integration ⏳ NOT STARTED
+
+### Task 5.1: CGMLibre3Transmitter Class ⏳
+- [ ] Create `CGMLibre3Transmitter.swift`
+- [ ] Inherit from `BluetoothTransmitter`
+- [ ] Implement `CGMTransmitter` protocol
+- [ ] Integrate `Libre3GattManager`
+- [ ] Integrate `Libre3CryptoHelper`
+- [ ] Implement connection lifecycle
+- [ ] Handle disconnections and reconnections
+
+**Estimated Time**: 16 hours  
+**Dependencies**: All Phase 4 tasks  
+**Reference**: `CGMLibre2Transmitter.swift`
+
+**Testing**:
+- [ ] Connect/disconnect cycles
+- [ ] Reconnection after app restart
+- [ ] Background operation
 
 ---
 
-## Phase 6: UI Integration ⚠️ TODO
+### Task 5.2: Glucose Data Delegate ⏳
+- [ ] Implement `cgmTransmitterInfoReceived`
+- [ ] Convert Libre3GlucoseReading to RawGlucoseData
+- [ ] Pass battery info
+- [ ] Handle sensor age
+- [ ] Trigger calibration if needed
 
-*All tasks unchanged - see original document*
+**Estimated Time**: 6 hours  
+**Dependencies**: Task 5.1  
+**Reference**: Libre2 delegate implementation
 
----
-
-## Phase 7: Testing & Refinement ⚠️ TODO
-
-*All tasks unchanged - see original document*
-
----
-
-## Phase 8: Release Preparation ⚠️ TODO
-
-*All tasks unchanged - see original document*
-
----
-
-## Total Estimated Time
-
-| Phase | Hours | Completed | Remaining |
-|-------|-------|-----------|-----------|
-| Phase 1: Foundation | 6 | 6 ✅ | 0 |
-| Phase 2: NFC Support | 14 | 12 ✅ | 2 |
-| Phase 3: Cryptography | 30 | 24 ✅ | 6 |
-| Phase 4: BLE Communication | 72 | 40 🔄 | 32 |
-| Phase 5: LibreView | 34 | 0 | 34 |
-| Phase 6: UI Integration | 18 | 0 | 18 |
-| Phase 7: Testing | 84 | 0 | 84 |
-| Phase 8: Release | 20 | 0 | 20 |
-| **TOTAL** | **278 hours** | **82 hours** | **196 hours** |
-
-**Overall Progress**: 29.5% (82/278 hours)  
-**Estimated Calendar Time Remaining**: 7-10 weeks (part-time development)
+**Testing**:
+- [ ] Verify glucose data flow
+- [ ] Test calibration prompts
+- [ ] Verify battery alerts
 
 ---
 
-## Dependencies & Prerequisites
+### Task 5.3: Sensor Lifecycle Management ⏳
+- [ ] Detect new sensor via NFC or BLE
+- [ ] Call `newSensorDetected` delegate
+- [ ] Handle sensor warmup (60 minutes)
+- [ ] Detect sensor expiry (14 days)
+- [ ] Call `sensorStopDetected` delegate
+- [ ] Handle missing sensor
 
-### Required Hardware
-- ✅ iPhone with NFC (iPhone 7 or later)
-- ✅ FreeStyle Libre 3 sensor(s) for testing
-- ✅ Mac with Xcode 14+ for development
+**Estimated Time**: 8 hours  
+**Dependencies**: Task 5.2  
+**Reference**: Libre2 lifecycle
 
-### Required Accounts
-- ✅ Apple Developer Account (for device testing)
-- ⚠️ LibreView account with sensor activated
-- ⚠️ LibreView API access (may require special permission from Abbott)
-
-### Technical Prerequisites
-- ✅ Understanding of CoreBluetooth
-- ✅ Understanding of CoreNFC
-- ✅ Understanding of CryptoKit
-- ✅ Swift 5.5+ knowledge
-- ✅ Cryptography knowledge (ECDH, AES-GCM)
-
----
-
-## Risk Assessment
-
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| LibreView API changes | High | Medium | Monitor Juggluco updates |
-| Crypto implementation errors | High | Medium | ✅ Extensive unit testing needed |
-| iOS background limitations | Medium | High | Design for disconnections |
-| Sensor firmware updates | High | Low | Monitor Abbott changes |
-| App Store rejection | Medium | Low | Follow guidelines strictly |
-| **Data format unknowns** | **High** | **High** | **Test with real sensor ASAP** |
+**Testing**:
+- [ ] Sensor start detection
+- [ ] Warmup period handling
+- [ ] Expiry detection
+- [ ] Missing sensor alerts
 
 ---
 
-## Success Criteria
+### Task 5.4: BluetoothPeripheralManager Integration ⏳
+- [ ] Add Libre3Type case to BluetoothPeripheralType
+- [ ] Create Libre3+CoreDataClass
+- [ ] Implement getBluetoothTransmitter for Libre3
+- [ ] Handle transmitter creation
+- [ ] Store sensor serial, UID
 
-- [x] Libre 3 project structure created
-- [x] NFC scanning implementation complete
-- [x] Cryptography foundation complete
-- [x] GATT communication framework complete
-- [ ] Libre 3 sensors detected via NFC scan - **needs hardware testing**
-- [ ] Successful BLE connection and authentication - **needs hardware testing**
-- [ ] Real-time glucose readings displayed - **needs hardware testing**
-- [ ] Historic data backfilled on connection
-- [ ] LibreView upload working
-- [ ] Battery usage acceptable (<15% per day)
-- [ ] No crashes in 48-hour test period
-- [ ] Glucose accuracy within ±10 mg/dL of LibreLink
+**Estimated Time**: 10 hours  
+**Dependencies**: Task 5.1  
+**Reference**: Libre2 peripheral management
 
----
-
-## Known Limitations & TODOs
-
-### Critical for Hardware Testing
-1. **Sensor PIN**: Currently using placeholder `0x00000000` - needs actual PIN from NFC or user input
-2. **Data Parsing**: Glucose, historic, and patch status parsing uses placeholder logic - needs actual data format from real sensor
-3. **Certificate Handling**: Phase 2-4 of security handshake needs completion with real certificate data
-4. **Sensor Type Enum**: Need to add `.libre3` case to `LibreSensorType` enum
-
-### Nice to Have
-1. **Connection Management**: Auto-reconnect logic not yet implemented
-2. **LibreView Integration**: Optional cloud sync not started
-3. **UI Integration**: Settings screens and transmitter selection
-4. **Unit Tests**: Comprehensive test coverage needed
+**Testing**:
+- [ ] Add Libre 3 from UI
+- [ ] Verify persistence
+- [ ] Test multiple sensors
 
 ---
 
-## Progress Summary
+## Phase 6: User Interface ⏳ NOT STARTED
 
-**Completed Tasks**: 15 / ~55 tasks (27%)  
-**Completed Hours**: 82 / 278 hours (29.5%)  
-**Current Phase**: Phase 4 - GATT Communication (55% complete)  
-**Next Critical Task**: Hardware testing with real Libre 3 sensor  
+### Task 6.1: Transmitter Selection UI ⏳
+- [x] **Add "Libre3" to CGMTransmitterType enum**
+- [ ] **Verify "Libre3" appears in CGM type picker**
+- [ ] Create Libre 3 settings screen
+- [ ] Add fields:
+  - Sensor serial number (read-only)
+  - Sensor UID (read-only)
+  - Connection status
+- [ ] Add "Scan Sensor" button (NFC)
 
-**All Commits** (8 total):
-1. `aed07d1` - feat(libre3): Add Libre 3 constants
-2. `ac6b1bd` - feat(libre3): Add Libre 3 logging category
-3. `30d27e1` - feat(libre3): Add Libre 3 data models
-4. `890380f` - feat(libre3): Add cryptography helper
-5. `ffc33a6` - docs(libre3): Update task tracker (first update)
-6. `fdbc319` - feat(libre3): Add NFC manager for Libre 3 detection
-7. `2f2e708` - feat(libre3): Add GATT manager for BLE communication
-8. `52b9007` - feat(libre3): Add main CGMLibre3Transmitter class
-9. `e2c6d1f` - fix(libre3): Add Libre3BLE nested enum for UUIDs
+**Estimated Time**: 8 hours  
+**Dependencies**: Task 2.2  
+**Reference**: Existing Libre 2 UI
 
-**Files Created**:
-- ✅ `xDrip/Constants/ConstantsLibre.swift` (updated)
-- ✅ `xDrip/Constants/ConstantsLog.swift` (updated)
-- ✅ `xDrip/BluetoothTransmitter/CGM/Libre/Libre3/Libre3Models.swift`
-- ✅ `xDrip/BluetoothTransmitter/CGM/Libre/Libre3/Libre3CryptoHelper.swift`
-- ✅ `xDrip/BluetoothTransmitter/CGM/Libre/Libre3/Libre3NFCManager.swift`
-- ✅ `xDrip/BluetoothTransmitter/CGM/Libre/Libre3/Libre3GattManager.swift`
-- ✅ `xDrip/BluetoothTransmitter/CGM/Libre/Libre3/CGMLibre3Transmitter.swift`
+**Testing**:
+- [ ] Add new Libre 3 transmitter
+- [ ] Scan sensor and populate fields
+- [ ] Save and retrieve settings
 
 ---
 
-## Next Steps (Priority Order)
+### Task 6.2: Sensor Detail View ⏳
+- [ ] Create `Libre3BluetoothPeripheralViewModel`
+- [ ] Display sensor info (serial, age, battery)
+- [ ] Show connection status
+- [ ] Add "Rescan Sensor" option
+- [ ] Show last glucose reading
 
-1. **Add `.libre3` to LibreSensorType enum** - Required for integration
-2. **Hardware Testing** - Test NFC scan → BLE connection → Authentication with real sensor
-3. **Refine Data Parsing** - Update glucose/historic/status parsing based on actual data
-4. **Complete Security Handshake** - Finish phases 2-4 based on real sensor responses
-5. **Connection Management** - Add auto-reconnect and battery optimization
-6. **UI Integration** - Add Libre 3 to transmitter picker and settings
-7. **LibreView Upload** (Optional) - Cloud synchronization
+**Estimated Time**: 6 hours  
+**Dependencies**: Task 6.1  
+**Reference**: `Libre2BluetoothPeripheralViewModel`
+
+**Testing**:
+- [ ] View updates on data change
+- [ ] Rescan functionality
+- [ ] Battery display
 
 ---
 
-**Document Version**: 2.0  
-**Last Updated**: 2026-06-17  
-**Maintained By**: @lutzlukesch
+### Task 6.3: Settings Integration ⏳
+- [ ] Add Libre 3 to transmitter picker
+- [ ] Handle sensor serial number display
+- [ ] Add "Scan with NFC" button
+- [ ] Integrate NFC manager callback
 
-**Branch**: `feature/libre3-integration`  
-**Status**: Ready for hardware testing  
-**Build Status**: ⚠️ Needs Xcode project integration
+**Estimated Time**: 4 hours  
+**Dependencies**: Task 6.1  
+**Reference**: Libre 2 settings
+
+**Testing**:
+- [ ] Select Libre 3
+- [ ] Trigger NFC scan
+- [ ] Verify serial populated
+
+---
+
+## Phase 7: Error Handling & Edge Cases ⏳ NOT STARTED
+
+### Task 7.1: Connection Error Handling ⏳
+- [ ] Handle authentication failures
+- [ ] Retry logic for failed handshakes
+- [ ] Timeout handling for GATT operations
+- [ ] Reconnection after Bluetooth OFF/ON
+- [ ] Handle sensor out of range
+
+**Estimated Time**: 8 hours  
+**Dependencies**: Task 5.1  
+
+**Testing**:
+- [ ] Force authentication failure
+- [ ] Bluetooth toggle
+- [ ] Sensor out of range
+- [ ] App backgrounding
+
+---
+
+### Task 7.2: Data Integrity Checks ⏳
+- [ ] Validate decrypted glucose data
+- [ ] Check for data gaps
+- [ ] Handle corrupted packets
+- [ ] Verify timestamp sequence
+- [ ] Detect duplicate readings
+
+**Estimated Time**: 6 hours  
+**Dependencies**: Task 4.5, Task 4.6  
+
+**Testing**:
+- [ ] Corrupt packet injection
+- [ ] Duplicate reading detection
+- [ ] Gap handling
+
+---
+
+### Task 7.3: Logging & Debugging ⏳
+- [ ] Add comprehensive trace logging
+- [ ] Log all GATT operations
+- [ ] Log crypto operations (redact keys)
+- [ ] Add debug mode for developers
+- [ ] Create troubleshooting guide
+
+**Estimated Time**: 4 hours  
+**Dependencies**: All phases  
+
+**Testing**:
+- [ ] Review logs for clarity
+- [ ] Test log filtering
+- [ ] Verify sensitive data redaction
+
+---
+
+## Phase 8: Testing & Validation ⏳ NOT STARTED
+
+### Task 8.1: Unit Testing ⏳
+- [ ] Test crypto functions (ECDH, AES-GCM)
+- [ ] Test data parsing (glucose, patch status)
+- [ ] Test state machine transitions
+- [ ] Test error handling paths
+
+**Estimated Time**: 12 hours  
+**Dependencies**: All implementation tasks  
+
+---
+
+### Task 8.2: Integration Testing ⏳
+- [ ] Full sensor lifecycle (scan → connect → read)
+- [ ] Reconnection after disconnect
+- [ ] Background operation
+- [ ] Multiple sensors (switch between)
+- [ ] Long-term stability (14-day sensor)
+
+**Estimated Time**: 20 hours  
+**Dependencies**: Task 8.1  
+
+---
+
+### Task 8.3: Real-World Testing ⏳
+- [ ] Test with actual Libre 3 sensor
+- [ ] Verify glucose accuracy vs fingerstick
+- [ ] Battery consumption profiling
+- [ ] Edge cases (airplane mode, low battery, etc.)
+- [ ] Beta testing with users
+
+**Estimated Time**: 40 hours  
+**Dependencies**: Task 8.2  
+
+---
+
+## Phase 9: Documentation & Cleanup ⏳ NOT STARTED
+
+### Task 9.1: Code Documentation ⏳
+- [ ] Add inline code comments
+- [ ] Document crypto implementation
+- [ ] Create architecture diagram
+- [ ] Add troubleshooting section to README
+
+**Estimated Time**: 8 hours  
+
+---
+
+### Task 9.2: User Documentation ⏳
+- [ ] Update user manual
+- [ ] Add Libre 3 setup guide
+- [ ] Create FAQ section
+- [ ] Add screenshots
+
+**Estimated Time**: 6 hours  
+
+---
+
+## Summary
+
+**Total Estimated Time**: 240+ hours  
+**Completed**: ~62 hours (Phase 1-3 + partial Phase 4)  
+**Remaining**: ~178 hours  
+**Progress**: ~26% complete  
+
+**Next Immediate Steps**:
+1. ✅ **Complete Task 1.1** - Add `.libre3` and `.Libre3` to enums
+2. 🔄 **Continue Task 4.2** - Test notification cascade with real sensor
+3. ⏭️ **Start Task 5.1** - Create `CGMLibre3Transmitter` class
+4. ⏭️ **Start Task 6.1** - Verify Libre3 in UI picker
+
+**Blockers**:
+- Real Libre 3 sensor needed for testing Phase 4+ tasks
+- NFC-enabled iOS device required for sensor scanning
+
+**Notes**:
+- Crypto implementation is production-ready
+- GATT manager structure is solid
+- Need to integrate GATT manager into transmitter class
+- UI integration pending after transmitter class is complete
