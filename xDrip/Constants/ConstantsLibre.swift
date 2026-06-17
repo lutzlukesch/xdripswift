@@ -18,6 +18,18 @@ enum ConstantsLibre {
     /// Libre 3 BLE service UUID (same as Libre 2)
     static let libre3ServiceUUID = "FDE3"
     
+    /// Libre 3 BLE UUIDs
+    enum Libre3BLE {
+        /// Service UUID (FDE3)
+        static let serviceUUID = "FDE3"
+        
+        /// Glucose data characteristic (main receive)
+        static let glucoseDataUUID = "F005"
+        
+        /// Patch control characteristic (main write)
+        static let patchControlUUID = "F00A"
+    }
+    
     /// Libre 3 GATT Characteristic UUIDs
     enum Libre3CharacteristicUUID {
         /// Command response characteristic (security)
