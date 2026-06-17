@@ -24,6 +24,8 @@ public enum LibreSensorType: String {
    
     case libreProH = "70"
     
+    case libre3 = "Libre3" // Libre 3 (BLE-only, no NFC FRAM)
+    
     var description: String {
         
         switch self {
@@ -54,6 +56,9 @@ public enum LibreSensorType: String {
             
         case .libreProH:
             return "Libre PRO H"
+            
+        case .libre3:
+            return "Libre 3"
 
         }
         
@@ -96,12 +101,23 @@ public enum LibreSensorType: String {
 
         }
         
+        // Libre 3 uses a different encryption method (AES-GCM) and doesn't use NFC FRAM
+        // Data is decrypted in CGMLibre3Transmitter directly
+        if self == .libre3 {
+            return false // No FRAM decryption needed for Libre 3
+        }
+        
         return false
         
     }
     
     /// checks crc if needed for the sensor type
     func crcIsOk(rxBuffer:inout Data, headerLength: Int, log: OSLog?) -> Bool {
+        
+        // Libre 3 doesn't use CRC validation (uses AES-GCM authentication instead)
+        if self == .libre3 {
+            return true
+        }
         
         guard Crc.LibreCrc(data: &rxBuffer, headerOffset: headerLength, libreSensorType: self) else {
             
@@ -119,6 +135,7 @@ public enum LibreSensorType: String {
     /// - reads the first byte in patchInfo and dependent on that value, returns type of sensor
     /// - if patchInfo = nil, then returnvalue is Libre1
     /// - if first byte is unknown, then returns nil
+    /// - Note: Libre 3 doesn't use patchInfo (BLE-only), so it won't be detected here
     static func type(patchInfo: String?) -> LibreSensorType? {
         
         guard let patchInfo = patchInfo else {return .libre1}
@@ -185,6 +202,9 @@ public enum LibreSensorType: String {
 
         case .libreProH:
             return 14
+            
+        case .libre3:
+            return 14.5 // Libre 3 sensors last 14 days
 
         }
         
