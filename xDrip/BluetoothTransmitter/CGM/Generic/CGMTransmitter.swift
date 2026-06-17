@@ -135,10 +135,10 @@ enum CGMTransmitterType:String, CaseIterable {
         case .Libre2:
             return true
             
-        case .dexcomG7:
+        case .Libre3:
             return true
             
-        case .Libre3:
+        case .dexcomG7:
             return true
             
         }
@@ -157,11 +157,11 @@ enum CGMTransmitterType:String, CaseIterable {
         case .miaomiao, .Bubble, .Libre2:
             return true
             
+        case .Libre3:
+            return true
+            
         case .dexcomG7:
             return false
-        
-        case .Libre3:
-            return false // Libre 3 auto-detects sensor, no manual start
         
         }
     }
@@ -182,12 +182,12 @@ enum CGMTransmitterType:String, CaseIterable {
         case .Libre2:
             return ConstantsDefaultAlertLevels.defaultBatteryAlertLevelLibre2
             
+        case .Libre3:
+            return ConstantsDefaultAlertLevels.defaultBatteryAlertLevelLibre2
+            
         case .dexcomG7:
             // we don't use this
             return ConstantsDefaultAlertLevels.defaultBatteryAlertLevelDexcomG5
-            
-        case .Libre3:
-            return 20 // 20% battery level alert for Libre 3
             
         }
     }
@@ -208,12 +208,12 @@ enum CGMTransmitterType:String, CaseIterable {
         case .Libre2:
             return "%"
             
+        case .Libre3:
+            return "%"
+            
         case .dexcomG7:
             // we don't use this
             return ""
-            
-        case .Libre3:
-            return "%" // Libre 3 uses percentage
             
         }
     }
