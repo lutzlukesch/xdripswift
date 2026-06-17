@@ -11,6 +11,15 @@ class Libre3CryptoHelper {
     
     private let log = OSLog(subsystem: ConstantsLog.subSystem, category: ConstantsLog.categoryCGMLibre3)
     
+    // MARK: - Initialization
+    
+    init() {}
+    
+    /// Convenience initializer that accepts a sensor UID (reserved for future use)
+    init(sensorUID: Data) {
+        // sensorUID reserved for future sensor-specific operations
+    }
+    
     // MARK: - ECDH Key Exchange
     
     /// Generate a new ECDH key pair for P-256 curve

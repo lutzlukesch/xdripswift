@@ -39,10 +39,111 @@ class Libre3GattManager {
     /// Whether we're authenticated and ready to receive data
     private(set) var isAuthenticated = false
     
+    // Callback-based integration (used when initialised from CGMLibre3Transmitter)
+    
+    /// Connected peripheral reference
+    private weak var peripheral: CBPeripheral?
+    
+    /// Sensor UID from NFC
+    private var sensorUID: Data?
+    
+    /// Callback to write data to peripheral characteristic
+    private var writeCharacteristicAction: ((Data, CBCharacteristicWriteType) -> Void)?
+    
+    /// Callback invoked with current glucose readings and sensor age
+    private var glucoseDataHandler: (([GlucoseData], TimeInterval) -> Void)?
+    
+    /// Callback invoked with historic glucose readings
+    private var historicDataHandler: (([GlucoseData]) -> Void)?
+    
+    /// Callback invoked when authentication status changes
+    private var authenticationStatusHandler: ((Bool) -> Void)?
+    
+    /// Callback invoked with sensor lifecycle count for expiry detection
+    private var sensorStatusHandler: ((Int) -> Void)?
+    
     // MARK: - Initialization
     
     init(cryptoHelper: Libre3CryptoHelper = Libre3CryptoHelper()) {
         self.cryptoHelper = cryptoHelper
+    }
+    
+    /// Designated initializer for integration with CGMLibre3Transmitter
+    init(peripheral: CBPeripheral,
+         cryptoHelper: Libre3CryptoHelper,
+         sensorUID: Data,
+         writeCharacteristicAction: @escaping (Data, CBCharacteristicWriteType) -> Void,
+         glucoseDataHandler: @escaping ([GlucoseData], TimeInterval) -> Void,
+         historicDataHandler: @escaping ([GlucoseData]) -> Void,
+         authenticationStatusHandler: @escaping (Bool) -> Void,
+         sensorStatusHandler: @escaping (Int) -> Void) {
+        self.cryptoHelper = cryptoHelper
+        self.peripheral = peripheral
+        self.sensorUID = sensorUID
+        self.writeCharacteristicAction = writeCharacteristicAction
+        self.glucoseDataHandler = glucoseDataHandler
+        self.historicDataHandler = historicDataHandler
+        self.authenticationStatusHandler = authenticationStatusHandler
+        self.sensorStatusHandler = sensorStatusHandler
+    }
+    
+    // MARK: - CBPeripheralDelegate Pass-through Methods
+    
+    /// Called when services are discovered on the peripheral
+    func didDiscoverServices(error: Error?) {
+        guard error == nil else {
+            os_log("Error discovering services: %{public}@", log: log, type: .error,
+                   error!.localizedDescription)
+            return
+        }
+        os_log("Services discovered", log: log, type: .info)
+    }
+    
+    /// Called when characteristics are discovered for a service
+    func didDiscoverCharacteristics(for service: CBService, error: Error?) {
+        guard error == nil else {
+            os_log("Error discovering characteristics: %{public}@", log: log, type: .error,
+                   error!.localizedDescription)
+            return
+        }
+        
+        if let discoveredCharacteristics = service.characteristics {
+            for characteristic in discoveredCharacteristics {
+                if let libre3Char = Libre3Characteristic(rawValue: characteristic.uuid.uuidString.uppercased()) {
+                    storeCharacteristic(characteristic, type: libre3Char)
+                }
+            }
+        }
+        
+        if allCharacteristicsDiscovered, let availablePeripheral = peripheral {
+            startNotificationCascade(peripheral: availablePeripheral)
+        }
+    }
+    
+    /// Called when a characteristic's notification state changes
+    func didUpdateNotificationState(for characteristic: CBCharacteristic, error: Error?) {
+        guard error == nil else {
+            os_log("Error updating notification state for %{public}@: %{public}@",
+                   log: log, type: .error, characteristic.uuid.uuidString,
+                   error!.localizedDescription)
+            return
+        }
+        guard let availablePeripheral = peripheral else { return }
+        handleNotificationStateUpdate(for: characteristic, peripheral: availablePeripheral)
+    }
+    
+    /// Called when a characteristic's value is updated (notification or read)
+    func didUpdateValue(for characteristic: CBCharacteristic, value: Data) {
+        handleReceivedData(value, from: characteristic)
+    }
+    
+    /// Called when a write to a characteristic completes
+    func didWriteValue(for characteristic: CBCharacteristic, error: Error?) {
+        if let error = error {
+            os_log("Write error for characteristic %{public}@: %{public}@",
+                   log: log, type: .error, characteristic.uuid.uuidString,
+                   error.localizedDescription)
+        }
     }
     
     // MARK: - Public Methods

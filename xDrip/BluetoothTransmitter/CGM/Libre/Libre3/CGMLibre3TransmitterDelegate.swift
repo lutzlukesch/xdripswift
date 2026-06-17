@@ -7,4 +7,7 @@ protocol CGMLibre3TransmitterDelegate: AnyObject {
     
     /// received sensor time in minutes
     func received(sensorTimeInMinutes: Int, from cGMLibre3Transmitter: CGMLibre3Transmitter)
+    
+    /// received battery level (percentage 0-100)
+    func received(batteryLevel: Int, from cGMLibre3Transmitter: CGMLibre3Transmitter)
 }
