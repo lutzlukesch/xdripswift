@@ -97,6 +97,9 @@ enum CGMTransmitterType:String, CaseIterable {
     /// Libre2
     case Libre2 = "Libre2"
     
+    /// Libre3
+    case Libre3 = "Libre3"
+    
     /// what sensorType does this CGMTransmitter type support
     func sensorType() -> CGMSensorType {
         
@@ -105,7 +108,7 @@ enum CGMTransmitterType:String, CaseIterable {
         case .dexcom, .dexcomG7:
             return .Dexcom
             
-        case .miaomiao, .Bubble, .Libre2:
+        case .miaomiao, .Bubble, .Libre2, .Libre3:
             return .Libre
             
         }
@@ -135,6 +138,9 @@ enum CGMTransmitterType:String, CaseIterable {
         case .dexcomG7:
             return true
             
+        case .Libre3:
+            return true
+            
         }
     }
     
@@ -153,6 +159,9 @@ enum CGMTransmitterType:String, CaseIterable {
             
         case .dexcomG7:
             return false
+        
+        case .Libre3:
+            return false // Libre 3 auto-detects sensor, no manual start
         
         }
     }
@@ -177,6 +186,9 @@ enum CGMTransmitterType:String, CaseIterable {
             // we don't use this
             return ConstantsDefaultAlertLevels.defaultBatteryAlertLevelDexcomG5
             
+        case .Libre3:
+            return 20 // 20% battery level alert for Libre 3
+            
         }
     }
     
@@ -199,6 +211,9 @@ enum CGMTransmitterType:String, CaseIterable {
         case .dexcomG7:
             // we don't use this
             return ""
+            
+        case .Libre3:
+            return "%" // Libre 3 uses percentage
             
         }
     }
@@ -251,6 +266,9 @@ enum CGMTransmitterType:String, CaseIterable {
             } else {
                 return "Libre 2 EU"
             }
+            
+        case .Libre3:
+            return "Libre 3"
             
         default:
             return self.rawValue
